@@ -10,9 +10,28 @@ const DATA_FILE = process.env.DATA_FILE || path.resolve('server/data/pins.json')
 const ALLOWED_CATEGORIES = new Set(['sos', 'stray', 'adoption', 'help'])
 const ALLOWED_STATUSES = new Set(['active', 'resolved'])
 const USER_TOKEN_HEADER = 'x-user-token'
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://dog-helper-geo.netlify.app'
 
 const app = express()
-app.use(cors())
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true)
+      return
+    }
+    if (origin === FRONTEND_ORIGIN) {
+      callback(null, true)
+      return
+    }
+    callback(new Error(`Origin not allowed: ${origin}`))
+  },
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', USER_TOKEN_HEADER],
+  optionsSuccessStatus: 204,
+}
+
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 app.use(express.json({ limit: '12mb' }))
 
 let writeChain = Promise.resolve()
