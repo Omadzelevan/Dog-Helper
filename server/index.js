@@ -1,4 +1,3 @@
-import cors from 'cors'
 import express from 'express'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -10,39 +9,18 @@ const DATA_FILE = process.env.DATA_FILE || path.resolve('server/data/pins.json')
 const ALLOWED_CATEGORIES = new Set(['sos', 'stray', 'adoption', 'help'])
 const ALLOWED_STATUSES = new Set(['active', 'resolved'])
 const USER_TOKEN_HEADER = 'x-user-token'
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'https://dog-helper-geo.netlify.app'
-const EXTRA_ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
-  .split(',')
-  .map((item) => item.trim())
-  .filter(Boolean)
-const ALLOWED_ORIGINS = new Set([
-  FRONTEND_ORIGIN,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  ...EXTRA_ALLOWED_ORIGINS,
-])
 
 const app = express()
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin) {
-      callback(null, true)
-      return
-    }
-    if (ALLOWED_ORIGINS.has(origin)) {
-      callback(null, true)
-      return
-    }
-    callback(null, false)
-  },
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', USER_TOKEN_HEADER],
-  exposedHeaders: ['Content-Type'],
-  optionsSuccessStatus: 204,
-}
-
-app.use(cors(corsOptions))
-app.options(/.*/, cors(corsOptions))
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', `Content-Type, ${USER_TOKEN_HEADER}`)
+  if (req.method === 'OPTIONS') {
+    res.status(204).end()
+    return
+  }
+  next()
+})
 app.use(express.json({ limit: '12mb' }))
 
 let writeChain = Promise.resolve()
